@@ -18,3 +18,46 @@
 
 ![DNS Query](screenshots/dns_query_dc.png)
 ![DNS Response](screenshots/dns_response_dc.png)
+
+## 2. DNS-анализ (системный трафик Windows)
+
+После ARP-активности хост 10.1.17.215 выполняет стандартные DNS-запросы, характерные для Windows-клиента
+
+### Запросы к Microsoft Defender  телеметрии
+Хост обращается к домену
+
+- `kv801.prod.do.dsp.mp.microsoft.com`
+
+Ответ содержит цепочку CNAME через CDN Akamai
+
+- `kv801.prod.do.dsp.mp.microsoft.com.edgekey.net`
+- `e12437.d.akamaiedge.net`
+- A‑запись 23.40.146.4
+
+Это штатный трафик Microsoft Defender и не является вредоносным.
+
+![DNS Query Microsoft](screenshotsdns_query_dc.png)
+![DNS Response Microsoft](screenshotsdns_response_dc.png)
+
+### Проверка подключения к интернету (NCSI)
+Хост также выполняет запрос
+
+- `www.msftconnecttest.com`
+
+Ответ проходит через
+
+- `ncsi-geo.trafficmanager.net`
+- `www.msftncsi.com.edgesuite.net`
+- `a1961.g2.akamai.net`
+
+И резолвится в
+
+- 23.220.102.9
+- 23.220.102.18
+
+Это стандартная проверка интернет‑доступа Windows (NCSI).
+
+---
+
+Данный трафик является нормальным и важен для контекста он показывает, что хост функционирует как обычный доменный клиент. Вредоносной активности в этих запросах нет.
+![DNS Screenshot](screenshots/313131.png)
