@@ -5,3 +5,16 @@
 
 ![ARP Screenshot](screenshots/arp_infected_host.png)
 
+## 2. DNS-анализ (определение контроллера домена)
+
+Хост **10.1.17.215** выполняет стандартные доменные DNS-запросы к контроллеру домена:
+
+- SRV-запрос: `_ldap._tcp.Default-First-Site-Name._sites.dc._msdcs.bluemoontuesday.com`
+- Ответ указывает на контроллер домена: **win-gsh54qlw48d.bluemoontuesday.com** (IP **10.1.17.2**)
+
+Эта активность является штатной для доменного клиента и подтверждает:
+- роль **10.1.17.2** как контроллера домена и DNS-сервера;
+- роль **10.1.17.215** как доменного клиента.
+
+![DNS Query](screenshots/dns_query_dc.png)
+![DNS Response](screenshots/dns_response_dc.png)
