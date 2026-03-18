@@ -22,7 +22,7 @@ Initial Vector: A DNS query to the malicious domain impedignaw.com.
 DNS Resolution: The response (Packet #46) mapped the domain to Attacker IP 81.90.180.38.
 Beaconing: Multiple queries to DGA (Domain Generation Algorithm) domains: zyu33.com, cowspidzu.pro, and shiriez48.com.
 
-![ Screenshot](screenshots/2.png) ![ Screenshot](screenshots/3.png)DNS query/response list showing impedignaw.com and its resolved IP.
+![ Screenshot](screenshots/2.png) ![ Screenshot](screenshots/7.png)DNS query/response list showing impedignaw.com and its resolved IP.
 Step 3: Malware Delivery & Confirmation
 Action: Inspected HTTP traffic with the attacker's IP to verify the payload delivery.
 
