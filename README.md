@@ -12,27 +12,27 @@ Action: Analyzed network conversations to find the most active internal host.
 
 Method: Statistics -> Conversations -> IPv4 (Sorted by Bytes).
 Finding: Internal host 10.12.19.101 showed an anomalous volume of outbound traffic.
-![ARP Screenshot](screenshots/1.png) Conversations table showing 10.12.19.101 as the top talker.
+![ Screenshot](screenshots/1.png) Conversations table showing 10.12.19.101 as the top talker.
+
 Step 2: Initial Access & DNS Reconnaissance (DGA/C2)
 Action: Filtered DNS queries for the victim host to find the entry point.
-
 Filter: ip.src == 10.12.19.101 && dns
 Finding:
 Initial Vector: A DNS query to the malicious domain impedignaw.com.
-DNS Resolution: The response (Packet #46) mapped the domain to Attacker IP 91.90.180.38.
+DNS Resolution: The response (Packet #46) mapped the domain to Attacker IP 81.90.180.38.
 Beaconing: Multiple queries to DGA (Domain Generation Algorithm) domains: zyu33.com, cowspidzu.pro, and shiriez48.com.
 
-![ARP Screenshot](screenshots/2.png) ![ARP Screenshot](screenshots/3.png)DNS query/response list showing impedignaw.com and its resolved IP.
+![ Screenshot](screenshots/2.png) ![ Screenshot](screenshots/3.png)DNS query/response list showing impedignaw.com and its resolved IP.
 Step 3: Malware Delivery & Confirmation
 Action: Inspected HTTP traffic with the attacker's IP to verify the payload delivery.
 
-Filter: ip.addr == 91.90.180.38 && http
+Filter: ip.addr == 11.90.180.38 && http
 Findings:
 Malicious Payload: An HTTP GET request for /koorsh/soogar.php?l=fakinx9.cab.
 Successful Delivery: The server responded with 200 OK, confirming the malware was successfully downloaded to the host.
 User-Agent: Mozilla/5.0... suggests the download was triggered via a web browser (likely phishing).
 
-![ARP Screenshot](screenshots/4.png): HTTP GET request followed by the 200 OK status code.
+![ Screenshot](screenshots/4.png): HTTP GET request followed by the 200 OK status code.
 Step 4: Data Exfiltration (C2 Communication)
 Action: Searched for outbound POST requests containing stolen information.
 
