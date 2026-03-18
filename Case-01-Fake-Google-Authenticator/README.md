@@ -1,63 +1,62 @@
-## 1. Определение заражённого хоста (ARP)
 
-На основании ARP-трафика видно, что инициатором сетевой активности является хост **10.1.17.215** (MAC: Intel_26:4a:74). 
-Этот хост первым обращается к контроллеру домена и выполняет ARP Probe.
+Case Study: Ursnif/IcedID Malware Infection Analysis (PCAP Analysis)
+📌 Incident Overview
+Objective: Identify the initial infection vector, C2 infrastructure, and confirm data exfiltration.
+Tool: Wireshark
+Source File: 2019-12-19-Ursnif-with-IcedID-and-Valak.pcap
+Status: Confirmed Incident (Data Breach)
 
-![ARP Screenshot](screenshots/arp_infected_host.png)
+🕵️‍♂️ Investigation Timeline
+Step 1: Identifying the Victim (Internal Recon)
+Action: Analyzed network conversations to find the most active internal host.
 
-## 2. DNS-анализ (определение контроллера домена)
+Method: Statistics -> Conversations -> IPv4 (Sorted by Bytes).
+Finding: Internal host 10.12.19.101 showed an anomalous volume of outbound traffic.
+![ Screenshot](screenshots/1.png) Conversations table showing 10.12.19.101 as the top talker.
 
-Хост **10.1.17.215** выполняет стандартные доменные DNS-запросы к контроллеру домена:
+Step 2: Initial Access & DNS Reconnaissance (DGA/C2)
+Action: Filtered DNS queries for the victim host to find the entry point.
+Filter: ip.src == 10.12.19.101 && dns
+Finding:
+Initial Vector: A DNS query to the malicious domain impedignaw.com.
+DNS Resolution: The response (Packet #46) mapped the domain to Attacker IP 81.90.180.38.
+Beaconing: Multiple queries to DGA (Domain Generation Algorithm) domains:jlb81hdvernon.com , b99vxjju.com , v60yuuu1415.com ...
 
-- SRV-запрос: `_ldap._tcp.Default-First-Site-Name._sites.dc._msdcs.bluemoontuesday.com`
-- Ответ указывает на контроллер домена: **win-gsh54qlw48d.bluemoontuesday.com** (IP **10.1.17.2**)
 
-Эта активность является штатной для доменного клиента и подтверждает:
-- роль **10.1.17.2** как контроллера домена и DNS-сервера;
-- роль **10.1.17.215** как доменного клиента.
+![ Screenshot](screenshots/2.png) ![ Screenshot](screenshots/8.png)DNS query/response list showing impedignaw.com and its resolved IP.
+Step 3: Malware Delivery & Confirmation
+Action: Inspected HTTP traffic with the attacker's IP to verify the payload delivery.
 
-![DNS Query](screenshots/dns_query_dc.png)
-![DNS Response](screenshots/dns_response_dc.png)
+Filter: ip.addr == 11.90.180.38 && http
+Findings:
+Malicious Payload: An HTTP GET request for /koorsh/soogar.php?l=fakinx9.cab.
+Successful Delivery: The server responded with 200 OK, confirming the malware was successfully downloaded to the host.
+User-Agent: Mozilla/5.0... suggests the download was triggered via a web browser (likely phishing).
 
-## 2. DNS-анализ (системный трафик Windows)
+![ Screenshot](screenshots/4.png): HTTP GET request followed by the 200 OK status code.
+Step 4: Data Exfiltration (C2 Communication)
+Action: Searched for outbound POST requests containing stolen information.
 
-После ARP-активности хост 10.1.17.215 выполняет стандартные DNS-запросы, характерные для Windows-клиента
+Filter: ip.src == 10.12.19.101 && http.request.method == "POST"
+Finding: Multiple POST requests to C2 server 185.22.153.208.
+Evidence: The URL contained Base64 encoded strings and tags like NETWORK_INFO, confirming that system data was exfiltrated.
+![ARP Screenshot](screenshots/5.png) HTTP POST request showing the long obfuscated URL used for exfiltration.
 
-### Запросы к Microsoft Defender  телеметрии
-Хост обращается к домену
+🏆 Summary of Findings
+The incident is confirmed. Host 10.12.19.101 was compromised by the Ursnif banking trojan.
 
-- `kv801.prod.do.dsp.mp.microsoft.com`
+Infection Vector: Phishing/Web browsing.
+Impact: Successful data exfiltration to a Command & Control (C2) server.
+Recommendations:
 
-Ответ содержит цепочку CNAME через CDN Akamai
+Isolate host 10.12.19.101 immediately.
+Block IPs 91.90.180.38 and 185.22.153.208 on the corporate firewall.
+Reset all user credentials associated with the affected machine.
 
-- `kv801.prod.do.dsp.mp.microsoft.com.edgekey.net`
-- `e12437.d.akamaiedge.net`
-- A‑запись 23.40.146.4
+💡 SOC Skills Demonstrated:
 
-Это штатный трафик Microsoft Defender и не является вредоносным.
+Network Traffic Analysis (Wireshark)
+Threat Hunting (DNS/HTTP)
+Identifying Malicious Patterns (DGA, Beaconing, C2)
+Incident Reporting
 
-![DNS Query Microsoft](screenshotsdns_query_dc.png)
-![DNS Response Microsoft](screenshotsdns_response_dc.png)
-
-### Проверка подключения к интернету (NCSI)
-Хост также выполняет запрос
-
-- `www.msftconnecttest.com`
-
-Ответ проходит через
-
-- `ncsi-geo.trafficmanager.net`
-- `www.msftncsi.com.edgesuite.net`
-- `a1961.g2.akamai.net`
-
-И резолвится в
-
-- 23.220.102.9
-- 23.220.102.18
-
-Это стандартная проверка интернет‑доступа Windows (NCSI).
-
----
-
-Данный трафик является нормальным и важен для контекста он показывает, что хост функционирует как обычный доменный клиент. Вредоносной активности в этих запросах нет.
-![DNS Screenshot](screenshots/313131.png)
