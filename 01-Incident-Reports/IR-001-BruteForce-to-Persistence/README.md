@@ -46,3 +46,5 @@
 
 #### Persistence via Registry
 ![Registry Screen](./screenshot$/Reg.png)
+
+Полний разбор https://github.com/Shinobi0mod/SOC-Portfolio/blob/main/04-Threat-Hunting/TH-001-BruteForce-to-Persistence/readme.md
