@@ -1,46 +1,65 @@
-1)В ходе планового Threat Hunting по поиску аномалий в процессах аутентификации (Event ID 4625) была обнаружена подозрительная активность 6 неудаччних попиток входа  ( я использовал филтр event.code: 4625
-Apr 17, 2026 @ 14:56:43.567 Старт брут форса
-user.name	1
-source.ip	127.0.0.1
+### 1) Обнаружение брутфорса (Threat Hunting)
+В ходе планового Threat Hunting по поиску аномалий (Event ID 4625) обнаружена подозрительная активность: 6 неудачных попыток входа.  
+**Фильтр:** `event.code: 4625`  
+- **Время:** Apr 17, 2026 @ 14:56:43.567  
+- **User:** 1  
+- **Source IP:** 127.0.0.1  
 
-Брутфорс: T1110.001 (Brute Force: Password Guessing)
-
+**Техника MITRE:** [T1110.001 (Brute Force)](https://mitre.org)  
 ![Brute Force Screen](./screenshot$/bruteForce.png)
 
-2)после чего проверка на успешний вход добавил в фильтр event.code: (4625 or 4624)
-@timestamp	Apr 17, 2026 @ 14:57:27.493    ( время успешного входа ивент 4624 на пользователя 1  с таким же айпи source.ip	127.0.0.1 ) 
-winlog.event_data.LogonType	2  (локальний вход) (так как я симулировал вход )
-успех брутфорса подтверждается тем же source.ip и user.name 
-3)для поиска что било запущено после входа я воспольщовался фильртом event.category: process AND user.name: "1"
-@timestamp	Apr 17, 2026 @ 14:57:50.912
-process.parent.name	powershell.exe
-process.parent.pid : 22,032
-бил найден лог виполнение команди в певршел 
-process.command_line	"C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe" -ExecutionPolicy Bypass -File C:\Temp\svchost.exe  (зпуск svchost.exe из папки темп что очень подозриетльно svchost.exe должен заупскаться из папки систем 32) х2 таких лога
+---
 
-Запуск через PowerShell: T1059.001 (Command and Scripting Interpreter: PowerShell)
- Маскировка файла (svchost в Temp): T1036.005 (Masquerading: Match Legitimate Name or Location)
+### 2) Успешный вход
+Проверка на успешный вход после брутфорса.  
+**Фильтр:** `event.code: (4625 or 4624)`  
+- **Время успеха:** 14:57:27.493  
+- **LogonType:** 2 (локальный вход)  
+Успех подтверждается совпадением IP и имени пользователя.  
+![Logon Screen](./screenshot$/seccessfulLogin.png)
 
-4) Что би понять  откуда єтот файл я воспользовался филтром event.category : "file" AND file.path : *svchost.exe* 
-@timestamp : 14:57:39  говорит о том что фал бил создан за 11 секунд до его запуска через поершел 
-event.code: 11 создание файла 
-file.path : C:\Temp\svchost.exe  путь совпадает 
-process.executable	C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe  говорит о том что щлоумишленик использовал повершел для создание фала  
-5) проверяем било ли закрепление 
-@timestamp	Apr 17, 2026 @ 14:58:18.678  обнаружено закрипление в системе  время совпадает 
-registry.data.strings	C:\Temp\svchost.exe  вот наш файл подозрительний 
-registry.path	HKU\S-1-5-21-2669845322-2433443592-1960360245-1001\Software\Microsoft\Windows\CurrentVersion\Run\TestApp
+---
 
-Закрепление в реестре: T1547.001 (Boot or Logon Autostart Execution: Registry Run Keys / Startup Folder)
+### 3) Анализ запущенных процессов
+Поиск активности после входа.  
+**Фильтр:** `event.category: process AND user.name: "1"`  
+Обнаружен запуск подозрительной команды:  
+`powershell.exe -ExecutionPolicy Bypass -File C:\Temp\svchost.exe`  
+**Аномалия:** Запуск системного имени из папки `Temp`.
 
-Рекомендации:
-Изоляция и очистка:
-Удалить файл C:\Temp\svchost.exe.
-Удалить ключ реестра TestApp из ветки ...\CurrentVersion\Run.
-Учетная запись:
-Принудительно сбросить пароль пользователя «1».
-Проверить, не были ли созданы другие учетные записи или изменены права текущей.
-Повышение безопасности (Hardening):
-Внедрить политику блокировки учетной записи после 5 неудачных попыток входа (защита от брутфорса).
-Ограничить запуск PowerShell для обычных пользователей или настроить Constrained Language Mode.
-Настроить алерт в SIEM на создание файлов .exe в директории C:\Temp\
+**Техники MITRE:**  
+- [T1059.001 (PowerShell)](https://mitre.org)  
+- [T1036.005 (Masquerading)](https://mitre.org)  
+![Process Screen](./screenshot$/process.png)
+
+---
+
+### 4) Источник файла (File Creation)
+Выяснение происхождения файла.  
+**Фильтр:** `event.category: "file" AND file.path: *svchost.exe*`  
+- **Событие:** Event ID 11 (создание файла).  
+- **Тайминг:** Файл создан за 11 секунд до запуска.  
+- **Инициатор:** `powershell.exe`.  
+![File Creation Screen](./screenshot$/file.png)
+
+---
+
+### 5) Закрепление в системе (Persistence)
+Проверка изменений в реестре.  
+**Время:** 14:58:18.678  
+Обнаружено создание ключа автозагрузки:  
+- **Path:** `...CurrentVersion\Run\TestApp`  
+- **Data:** `C:\Temp\svchost.exe`  
+
+**Техника MITRE:** [T1547.001 (Registry Run Keys)](https://mitre.org)  
+![Registry Screen](./screenshot$/Reg.png)
+
+---
+
+### Рекомендации (Remediation)
+1. **Изоляция:** Удалить файл `C:\Temp\svchost.exe` и ключ реестра `TestApp`.
+2. **Аккаунт:** Сбросить пароль пользователя «1».
+3. **Hardening:** 
+   - Настроить политику блокировки за брутфорс.
+   - Ограничить PowerShell (Constrained Language Mode).
+   - Создать SIEM-алерт на создание `.exe` в `C:\Temp\`.
