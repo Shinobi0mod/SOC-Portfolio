@@ -5,7 +5,7 @@ source.ip	127.0.0.1
 
 Брутфорс: T1110.001 (Brute Force: Password Guessing)
 
-![Brute Force Screen](01-Incident-Reports/IR-001-BruteForce-to-Persistence/screenshot$/bruteForce.png)
+![Brute Force Screen](./screenshot$/bruteForce.png)
 
 2)после чего проверка на успешний вход добавил в фильтр event.code: (4625 or 4624)
 @timestamp	Apr 17, 2026 @ 14:57:27.493    ( время успешного входа ивент 4624 на пользователя 1  с таким же айпи source.ip	127.0.0.1 ) 
